@@ -7,18 +7,11 @@ using System.Threading.Tasks;
 
 namespace MapMetrics;
 
-public class Session
+public class Session(GameController gameController)
 {
-    private List<MapRun> _maps;
-    private GameController _gameController;
-    public DateTime StartTime { get; }
-
-    public Session(GameController gameController)
-    {
-        StartTime = DateTime.Now;
-        _gameController = gameController;
-        _maps = [];
-    }
+    private List<MapRun> _maps = [];
+    private GameController _gameController = gameController;
+    public DateTime StartTime { get; } = DateTime.Now;
 
     public void StartRun(string areaName, uint areaHash)
     {
@@ -54,9 +47,7 @@ public class Session
         {
             return null;
         }
-        MapRun mapRun = _maps.Find(map => map.AreaHash == areaHash);
-
-        return mapRun;
+        return _maps.Find(map => map.AreaHash == areaHash);
     }
 
     public List<MapRun> Maps { get => _maps; }
