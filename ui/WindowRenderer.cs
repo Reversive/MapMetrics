@@ -22,33 +22,9 @@ public static class WindowRenderer
 
     public static void RenderSessionSummaryWindow(Session session, MapMetricsSettings settings, string directoryName)
     {
-        RenderSessionHeader(session);
+        RenderSessionHeader(session, directoryName);
         RenderSessionSummaryTables(session, settings);
         RenderMapHistory(session, settings);
-        ImGui.Separator();
-
-        if (ImGui.Button("Export Session Data"))
-        {
-            var sessionExport = SessionExport.FromSession(session);
-            var fileName = $"map_metrics_session_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.json";
-            var filePath = Path.Combine(directoryName, fileName);
-
-            try
-            {
-                var jsonString = JsonConvert.SerializeObject(sessionExport, Formatting.Indented);
-                File.WriteAllText(filePath, jsonString);
-                DebugWindow.LogMsg($"Session data exported to {fileName}");
-            }
-            catch (Exception e)
-            {
-                DebugWindow.LogError($"Failed to export session data: {e.Message}");
-            }
-        }
-
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.SetTooltip("Export current session data to JSON file");
-        }
     }
 
     private static void RenderMapHeader(MapRun map)
@@ -89,10 +65,34 @@ public static class WindowRenderer
         }
     }
 
-    private static void RenderSessionHeader(Session session)
+    private static void RenderSessionHeader(Session session, string directoryName)
     {
         ImGui.TextColored(ColorHelper.HeaderColor, $"Session Started: {session.StartTime:HH:mm:ss}");
         ImGui.Text($"Total Maps Run: {session.Maps.Count}");
+        
+        ImGui.SameLine(ImGui.GetWindowWidth() - 200);
+        if (ImGui.Button("Export Session Data"))
+        {
+            var sessionExport = SessionExport.FromSession(session);
+            var fileName = $"map_metrics_session_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.json";
+            var filePath = Path.Combine(directoryName, fileName);
+
+            try
+            {
+                var jsonString = JsonConvert.SerializeObject(sessionExport, Formatting.Indented);
+                File.WriteAllText(filePath, jsonString);
+                DebugWindow.LogMsg($"Session data exported to {fileName}");
+            }
+            catch (Exception e)
+            {
+                DebugWindow.LogError($"Failed to export session data: {e.Message}");
+            }
+        }
+
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Export current session data to JSON file");
+        }
         ImGui.Spacing();
     }
 
