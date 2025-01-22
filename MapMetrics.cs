@@ -1,9 +1,12 @@
-﻿using System.Linq;
+﻿using System;
+using System.IO;
+using System.Linq;
 using System.Numerics;
 using ExileCore2;
 using ExileCore2.PoEMemory.MemoryObjects;
 using ImGuiNET;
 using MapMetrics.UI;
+using Newtonsoft.Json;
 
 namespace MapMetrics;
 
@@ -11,6 +14,8 @@ public class MapMetrics : BaseSettingsPlugin<MapMetricsSettings>
 {
     private SessionManager _sessionManager;
     private bool _isPanelOpen = false;
+    private DateTime _lastAutoSave = DateTime.Now;
+    private string _currentSessionFile;
 
     public override bool Initialise()
     {
@@ -36,11 +41,13 @@ public class MapMetrics : BaseSettingsPlugin<MapMetricsSettings>
         }
 
         DebugWindow.LogMsg($"Entering area {area.Name} for the first time");
+        _currentSessionFile = null;
         _sessionManager.CurrentSession.StartRun(area.Name, area.Hash);
     }
 
     public override void Tick()
     {
+        HandleAutoSave();
     }
 
     public override void Render()
@@ -107,6 +114,35 @@ public class MapMetrics : BaseSettingsPlugin<MapMetricsSettings>
 
         ImGui.EndTabBar();
     }
+
+    private void HandleAutoSave()
+    {
+        if (!Settings.AutoSaveSession || _sessionManager.CurrentSession == null)
+            return;
+
+        var now = DateTime.Now;
+        if ((now - _lastAutoSave).TotalSeconds >= 5)
+        {
+            AutoSaveCurrentSession();
+            _lastAutoSave = now;
+        }
+    }
+
+    private void AutoSaveCurrentSession()
+    {
+        try
+        {
+            var filePath = _sessionManager.GetCurrentSessionFilePath(DirectoryFullName);
+            var sessionExport = SessionExport.FromSession(_sessionManager.CurrentSession);
+            var jsonString = JsonConvert.SerializeObject(sessionExport, Formatting.Indented);
+            File.WriteAllText(filePath, jsonString);
+        }
+        catch (Exception e)
+        {
+            DebugWindow.LogError($"Failed to auto-save session: {e.Message}");
+        }
+    }
+
 
     public SessionManager SessionManager => _sessionManager;
 }

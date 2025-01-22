@@ -11,7 +11,7 @@ public class Session(GameController gameController)
 {
     private List<MapRun> _maps = [];
     private GameController _gameController = gameController;
-    public DateTime StartTime { get; } = DateTime.Now;
+    public DateTime StartTime { get; private set; } = DateTime.Now;
 
     public void StartRun(string areaName, uint areaHash)
     {

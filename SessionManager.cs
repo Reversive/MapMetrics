@@ -2,6 +2,7 @@
 using MapMetrics;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ public class SessionManager
     private List<Session> _completedSessions = new();
     private Session _currentSession;
     private GameController _gameController;
+    private string _currentSessionFilePath;
 
     public SessionManager(GameController gameController)
     {
@@ -22,6 +24,7 @@ public class SessionManager
     public void StartNewSession()
     {
         _currentSession = new Session(_gameController);
+        _currentSessionFilePath = null;
     }
 
     public void StopCurrentSession()
@@ -32,6 +35,16 @@ public class SessionManager
             _completedSessions.Add(_currentSession);
             StartNewSession();
         }
+    }
+
+    public string GetCurrentSessionFilePath(string directoryPath)
+    {
+        if (string.IsNullOrEmpty(_currentSessionFilePath))
+        {
+            _currentSessionFilePath = Path.Combine(directoryPath,
+                $"autodump_session_{_currentSession.StartTime:yyyy-MM-dd_HH-mm-ss}.json");
+        }
+        return _currentSessionFilePath;
     }
 
     public Session CurrentSession => _currentSession;
