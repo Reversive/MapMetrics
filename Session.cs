@@ -51,4 +51,6 @@ public class Session(GameController gameController)
     }
 
     public List<MapRun> Maps { get => _maps; }
+    public DateTime? EndTime { get; set; }
+    public TimeSpan Duration => (EndTime ?? DateTime.Now).Subtract(StartTime);
 }

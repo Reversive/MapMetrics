@@ -7,6 +7,8 @@ namespace MapMetrics;
 public class SessionExport
 {
     public DateTime StartTime { get; set; }
+    public DateTime? EndTime { get; set; }
+    public TimeSpan Duration { get; set; }
     public List<MapRunExport> Maps { get; set; }
 
     public class MapRunExport
@@ -27,6 +29,8 @@ public class SessionExport
         return new SessionExport
         {
             StartTime = session.StartTime,
+            EndTime = session.EndTime,
+            Duration = session.Duration,
             Maps = session.Maps.Select(map => new MapRunExport
             {
                 AreaName = map.AreaName,

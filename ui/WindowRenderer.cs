@@ -20,11 +20,12 @@ public static class WindowRenderer
         RenderMapTables(currentMap, settings);
     }
 
-    public static void RenderSessionSummaryWindow(Session session, MapMetricsSettings settings, string directoryName)
+    public static void RenderSessionSummaryWindow(SessionManager sessionManager, MapMetricsSettings settings, string directoryName)
     {
-        RenderSessionHeader(session, directoryName);
-        RenderSessionSummaryTables(session, settings);
-        RenderMapHistory(session, settings);
+        RenderSessionHeader(sessionManager, sessionManager.CurrentSession, directoryName);
+        ImGui.Spacing();
+        RenderSessionSummaryTables(sessionManager.CurrentSession, settings);
+        RenderMapHistory(sessionManager.CurrentSession, settings);
     }
 
     private static void RenderMapHeader(MapRun map)
@@ -65,33 +66,19 @@ public static class WindowRenderer
         }
     }
 
-    private static void RenderSessionHeader(Session session, string directoryName)
+    private static void RenderSessionHeader(SessionManager sessionManager, Session session, string directoryName)
     {
         ImGui.TextColored(ColorHelper.HeaderColor, $"Session Started: {session.StartTime:HH:mm:ss}");
         ImGui.Text($"Total Maps Run: {session.Maps.Count}");
         
-        ImGui.SameLine(ImGui.GetWindowWidth() - 200);
-        if (ImGui.Button("Export Session Data"))
+        ImGui.SameLine(ImGui.GetWindowWidth() - 150);
+        if (ImGui.Button("Stop Session"))
         {
-            var sessionExport = SessionExport.FromSession(session);
-            var fileName = $"map_metrics_session_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.json";
-            var filePath = Path.Combine(directoryName, fileName);
-
-            try
-            {
-                var jsonString = JsonConvert.SerializeObject(sessionExport, Formatting.Indented);
-                File.WriteAllText(filePath, jsonString);
-                DebugWindow.LogMsg($"Session data exported to {fileName}");
-            }
-            catch (Exception e)
-            {
-                DebugWindow.LogError($"Failed to export session data: {e.Message}");
-            }
+            sessionManager.StopCurrentSession();
         }
-
         if (ImGui.IsItemHovered())
         {
-            ImGui.SetTooltip("Export current session data to JSON file");
+            ImGui.SetTooltip("Stop current session and start a new one");
         }
         ImGui.Spacing();
     }
@@ -237,5 +224,101 @@ public static class WindowRenderer
             }
         }
         return totalMonsters;
+    }
+
+    public static void RenderSessionHistoryWindow(IReadOnlyList<Session> sessions, MapMetricsSettings settings, string directoryName)
+    {
+        if (ImGui.Button("Export All Sessions"))
+        {
+            ExportAllSessions(sessions, directoryName);
+        }
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Export all sessions to a single file");
+        }
+
+        ImGui.SameLine();
+        ImGui.TextColored(ColorHelper.HeaderColor, $"Total Sessions: {sessions.Count}");
+        ImGui.Spacing();
+        if (!ImGui.BeginTable("SessionHistory", 4, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable))
+            return;
+
+        ImGui.TableSetupColumn("Start Time", ImGuiTableColumnFlags.WidthFixed, 150);
+        ImGui.TableSetupColumn("Duration", ImGuiTableColumnFlags.WidthFixed, 100);
+        ImGui.TableSetupColumn("Maps Run", ImGuiTableColumnFlags.WidthFixed, 100);
+        ImGui.TableSetupColumn("Details", ImGuiTableColumnFlags.WidthStretch);
+        ImGui.TableHeadersRow();
+
+        foreach (var session in sessions.OrderByDescending(x => x.StartTime))
+        {
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            var isExpanded = ImGui.TreeNodeEx($"{session.StartTime:yyyy-MM-dd HH:mm:ss}", ImGuiTreeNodeFlags.SpanFullWidth);
+            ImGui.TableNextColumn();
+            ImGui.Text(session.Duration.ToString(@"hh\:mm\:ss"));
+            ImGui.TableNextColumn();
+            ImGui.Text(session.Maps.Count.ToString());
+            ImGui.TableNextColumn();
+            if (ImGui.Button($"Export##{session.StartTime.Ticks}"))
+            {
+                ExportSession(session, directoryName);
+            }
+
+            if (isExpanded)
+            {
+                RenderSessionHistoryDetails(session, settings);
+                ImGui.TreePop();
+            }
+        }
+
+        ImGui.EndTable();
+    }
+
+    private static void RenderSessionHistoryDetails(Session session, MapMetricsSettings settings)
+    {
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
+        ImGui.Indent();
+
+        RenderSessionSummaryTables(session, settings);
+        RenderMapHistory(session, settings);
+
+        ImGui.Unindent();
+    }
+
+    private static void ExportSession(Session session, string directoryName)
+    {
+        var sessionExport = SessionExport.FromSession(session);
+        var fileName = $"map_metrics_session_{session.StartTime:yyyy-MM-dd_HH-mm-ss}.json";
+        var filePath = Path.Combine(directoryName, fileName);
+
+        try
+        {
+            var jsonString = JsonConvert.SerializeObject(sessionExport, Formatting.Indented);
+            File.WriteAllText(filePath, jsonString);
+            DebugWindow.LogMsg($"Session data exported to {fileName}");
+        }
+        catch (Exception e)
+        {
+            DebugWindow.LogError($"Failed to export session data: {e.Message}");
+        }
+    }
+
+    private static void ExportAllSessions(IReadOnlyList<Session> sessions, string directoryName)
+    {
+        try
+        {
+            var multiSessionExport = MultiSessionExport.FromSessions(sessions);
+            var fileName = $"map_metrics_full_session_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.json";
+            var filePath = Path.Combine(directoryName, fileName);
+
+            var jsonString = JsonConvert.SerializeObject(multiSessionExport, Formatting.Indented);
+            File.WriteAllText(filePath, jsonString);
+            DebugWindow.LogMsg($"All sessions exported to {fileName}");
+        }
+        catch (Exception e)
+        {
+            DebugWindow.LogError($"Failed to export all sessions: {e.Message}");
+        }
     }
 }
