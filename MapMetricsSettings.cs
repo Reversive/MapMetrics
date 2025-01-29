@@ -14,7 +14,7 @@ public class MapMetricsSettings : ISettings
     [Menu("Currency Display Settings", "Toggle which currency tiers to display")]
     public TierSettings ItemDisplaySettings { get; set; } = new TierSettings();
     [Menu("Auto Save Session", "Automatically save current session every 5 seconds")]
-    public ToggleNode AutoSaveSession { get; set; } = new ToggleNode(false);
+    public ToggleNode AutoSaveSession { get; set; } = new ToggleNode(true);
 }
 
 [Submenu(CollapsedByDefault = false)]

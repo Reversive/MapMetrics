@@ -19,7 +19,7 @@ public class MapMetrics : BaseSettingsPlugin<MapMetricsSettings>
 
     public override bool Initialise()
     {
-        _sessionManager = new SessionManager(GameController);
+        _sessionManager = new SessionManager(GameController, DirectoryFullName);
         Input.RegisterKey(Settings.ToggleWindowHotkey);
         Settings.ToggleWindowHotkey.OnValueChanged += () => Input.RegisterKey(Settings.ToggleWindowHotkey);
         return true;
@@ -134,6 +134,7 @@ public class MapMetrics : BaseSettingsPlugin<MapMetricsSettings>
         {
             var filePath = _sessionManager.GetCurrentSessionFilePath(DirectoryFullName);
             var sessionExport = SessionExport.FromSession(_sessionManager.CurrentSession);
+            sessionExport.EndTime = DateTime.Now;
             var jsonString = JsonConvert.SerializeObject(sessionExport, Formatting.Indented);
             File.WriteAllText(filePath, jsonString);
         }
